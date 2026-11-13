@@ -65,6 +65,45 @@ details .card{padding-top:8px}
 details .card>h2{display:none}
 .week{margin:16px 0}
 .tag{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block}
+.stats{display:flex;justify-content:center;gap:36px;margin:26px 0}
+.stats b{display:block;font-size:30px;font-weight:300;font-variant-numeric:tabular-nums}
+.goal{height:4px;background:var(--line);border-radius:2px;max-width:240px;margin:8px auto 4px;overflow:hidden}
+.goal>div{height:100%;width:0;background:var(--good);transition:width .4s}
+.bars{display:flex;align-items:flex-end;gap:5px;height:90px;margin:26px 0 6px}
+.bars div{flex:1;background:var(--ink);opacity:.85;border-radius:2px 2px 0 0;min-height:2px}
+.bars div.zero{opacity:.12}.bars div.today{background:var(--good);opacity:1}
+.axis{display:flex;justify-content:space-between}
+.rows{margin-top:26px}.rows div{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
+.anim{max-width:260px;margin:6px auto 0;color:var(--ink)}
+.anim svg{width:100%;height:auto;display:block;overflow:visible}
+.anim .s{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.anim .f{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:3 5}
+.anim .d{fill:var(--good)}
+.anim text{fill:var(--muted);font-size:11px;text-anchor:middle;letter-spacing:.08em;text-transform:uppercase}
+.cap{font-size:13px;color:var(--muted);min-height:20px;margin-top:4px}
+.a-breath{transform-box:fill-box;transform-origin:center;animation:breath 12s ease-in-out infinite}
+@keyframes breath{0%{transform:scale(1)}33%{transform:scale(2.3)}100%{transform:scale(1)}}
+.a-in{animation:tin 12s linear infinite}.a-out{animation:tout 12s linear infinite}
+@keyframes tin{0%,30%{opacity:1}34%,100%{opacity:0}}
+@keyframes tout{0%,30%{opacity:0}34%,96%{opacity:1}100%{opacity:0}}
+.a-roll{animation:roll 2.4s linear infinite}
+@keyframes roll{0%{transform:translate(0,0)}25%{transform:translate(-2px,-6px)}50%{transform:translate(3px,-3px)}75%{transform:translate(3px,2px)}100%{transform:translate(0,0)}}
+.a-tilt{transform-box:fill-box;transform-origin:50% 100%;animation:tilt 6s ease-in-out infinite}
+@keyframes tilt{0%,100%{transform:rotate(0)}25%{transform:rotate(-16deg)}75%{transform:rotate(16deg)}}
+.a-up{animation:up 2.2s ease-in-out infinite}
+@keyframes up{0%,100%{transform:translateY(4px);opacity:.3}50%{transform:translateY(-4px);opacity:1}}
+.a-drop{animation:drop 3s ease-in-out infinite}
+@keyframes drop{0%,100%{transform:translateY(-5px)}50%{transform:translateY(0)}}
+.a-belly{transform-box:fill-box;transform-origin:center;animation:belly 12s ease-in-out infinite}
+@keyframes belly{0%{transform:scaleX(1)}33%{transform:scaleX(1.5)}100%{transform:scaleX(1)}}
+.a-step{opacity:.15;animation:step 4.5s linear infinite}
+@keyframes step{0%{opacity:1}11%{opacity:1}12%,100%{opacity:.15}}
+.a-swell{transform-box:fill-box;transform-origin:center;animation:swell 6s ease-in-out infinite}
+@keyframes swell{0%,100%{transform:scaleY(.12)}50%{transform:scaleY(1)}}
+.a-buzz{animation:buzz .12s linear infinite}
+@keyframes buzz{0%,100%{transform:translateX(-1px)}50%{transform:translateX(1px)}}
+ol.steps li{cursor:pointer}
+nav button{font-size:13px}
 </style>
 </head>
 <body>
@@ -124,11 +163,38 @@ details .card>h2{display:none}
 <section id="warmup">
 <div class="center">
 <h1>Warmup</h1>
-<p class="muted">Ten minutes. Everything should feel easy.</p>
+<p class="muted">Ten minutes. Everything should feel easy. Tap any step to see how it's done.</p>
+<div class="anim" id="wanim"></div>
+<div class="cap" id="wcap"></div>
 <div class="controls"><button class="main" id="wstart">Start</button></div>
 <div class="msg" id="wnow">&nbsp;</div>
 </div>
 <ol class="steps" id="wlist"></ol>
+</section>
+
+<section id="progress" class="center">
+<div class="label">Today's accuracy</div>
+<div class="target" id="pscore">&ndash;</div>
+<div class="goal"><div id="pgoal"></div></div>
+<p class="muted small" id="pgoalt">&nbsp;</p>
+<div class="stats">
+<div><b id="pstreak">0</b><span class="label">Day streak</span></div>
+<div><b id="pnotes">0</b><span class="label">Notes</span></div>
+<div><b id="pmin">0</b><span class="label">Minutes</span></div>
+</div>
+<div class="label" style="margin-top:34px">Notes matched, last 14 days</div>
+<div class="bars" id="pbars"></div>
+<div class="axis muted small"><span id="pfrom"></span><span>today</span></div>
+<div class="rows" style="text-align:left">
+<div><span class="muted">Warmup today</span><span id="pwarm"></span></div>
+<div><span class="muted">Best accuracy in a day</span><span id="pbest"></span></div>
+<div><span class="muted">Longest held note</span><span id="phold"></span></div>
+<div><span class="muted">Total notes matched</span><span id="ptotal"></span></div>
+<div><span class="muted">Total practice time</span><span id="ptime"></span></div>
+<div><span class="muted">Days practiced</span><span id="pdays"></span></div>
+<div><span class="muted">Range</span><span id="prange"></span></div>
+</div>
+<p class="muted small" style="margin-top:22px">Accuracy is how close you stay to each note while you sing it, from 0 to 100. Your progress is saved on this phone, in this browser.</p>
 </section>
 
 <section id="guide">
@@ -230,6 +296,7 @@ details .card>h2{display:none}
 <button data-t="practice" class="on">Practice</button>
 <button data-t="range">Range</button>
 <button data-t="warmup">Warmup</button>
+<button data-t="progress">Progress</button>
 <button data-t="guide">Guide</button>
 </nav>
 
@@ -245,7 +312,35 @@ $('tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===t));
  if(t!=='range'&&measuring){measuring=false;syncButtons();}
+ if(t==='progress')renderProgress();
  scrollTo(0,0);};
+
+// ---------- progress log ----------
+const GOAL=10;
+const dkey=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+let log=store.get('log',{});
+function today(){const k=dkey();if(!log[k])log[k]={n:0,s:0,sk:0,sec:0,w:0,h:0};return log[k];}
+function saveLog(){store.set('log',log);}
+function streak(){let c=0;const d=new Date();if(!active(log[dkey(d)]))d.setDate(d.getDate()-1);
+ while(active(log[dkey(d)])){c++;d.setDate(d.getDate()-1);}return c;}
+const active=e=>!!e&&(e.n>0||e.w>0);
+function fmtTime(sec){const m=Math.round(sec/60);return m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
+function renderProgress(){
+ const t=log[dkey()]||{n:0,s:0,sec:0,w:0,h:0};
+ $('pscore').innerHTML=t.n?Math.round(t.s/t.n):'&ndash;';
+ $('pgoal').style.width=Math.min(100,t.n/GOAL*100)+'%';
+ $('pgoalt').textContent=t.n>=GOAL?'Daily goal reached: '+t.n+' notes':'Daily goal: '+t.n+' of '+GOAL+' notes';
+ $('pstreak').textContent=streak();$('pnotes').textContent=t.n;$('pmin').textContent=Math.round(t.sec/60);
+ $('pwarm').textContent=t.w?'Done':'Not yet';
+ const days=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d);}
+ const max=Math.max(GOAL,...days.map(d=>(log[dkey(d)]||{}).n||0));
+ $('pbars').innerHTML=days.map((d,i)=>{const n=(log[dkey(d)]||{}).n||0;return '<div class="'+(n?'':'zero')+(i===13&&n?' today':'')+'" style="height:'+Math.max(2,n/max*100)+'%" title="'+n+'"></div>';}).join('');
+ $('pfrom').textContent=days[0].toLocaleDateString(undefined,{month:'short',day:'numeric'});
+ let tn=0,ts=0,td=0,best=0,hold=0;Object.values(log).forEach(e=>{tn+=e.n||0;ts+=e.sec||0;if(active(e))td++;if(e.n>=3)best=Math.max(best,Math.round(e.s/e.n));hold=Math.max(hold,e.h||0);});
+ $('pbest').textContent=best?best:'Match 3 notes in a day';$('phold').textContent=hold?hold.toFixed(1)+' s':'None yet';
+ $('ptotal').textContent=tn;$('ptime').textContent=fmtTime(ts);$('pdays').textContent=td;
+ const rg=store.get('range',null);$('prange').textContent=rg?midiToName(Math.round(rg.low))+' to '+midiToName(Math.round(rg.high)):'Not measured';
+}
 
 // ---------- audio ----------
 let ctx,analyser,buf,stream,srcNode,out,wave,running=false,current=null,muteUntil=0;
@@ -277,6 +372,7 @@ function stopMic(){
  try{stream.getTracks().forEach(t=>t.stop());}catch(e){}
  try{srcNode.disconnect();}catch(e){}
  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+ saveLog();lastT=0;
  stream=null;current=null;smooth=null;target=null;holdStart=null;
  $('tnote').innerHTML='&ndash;';$('tnote').classList.remove('hit');$('tlabel').textContent='Singing Coach';
  $('dot').className='dot';$('cents').innerHTML='&nbsp;';$('holdbar').style.width='0';
@@ -304,8 +400,10 @@ function detect(b,sr){
  return {freq:sr/(bestLag+(isFinite(d)?d:0))};
 }
 const hist=[];let smooth=null;
+let lastT=0,devSum=0,devN=0,onStart=0;
 function loop(){
  if(!running)return;
+ const now=performance.now();if(lastT&&now-lastT<1000)today().sec+=(now-lastT)/1000;lastT=now;
  analyser.getFloatTimeDomainData(buf);
  const r=performance.now()<muteUntil?null:detect(buf,ctx.sampleRate);
  if(r){const m=freqToMidi(r.freq);smooth=smooth==null||Math.abs(m-smooth)>1?m:smooth*0.6+m*0.4;current={midi:smooth,freq:r.freq};}
@@ -332,6 +430,7 @@ function curRange(){const v=$('voice').value;if(v==='mine'){const r=store.get('r
 const scale=[0,2,4,5,7,5,4,2,0];
 function newTarget(){
  clearTimeout(nextTimer);if(!running)return;
+ devSum=0;devN=0;onStart=0;
  const [lo,hi]=curRange(),mode=$('mode').value;$('tnote').classList.remove('hit');holdStart=null;$('holdbar').style.width='0';
  if(mode==='free'){target=null;$('tlabel').textContent='You are singing';$('tnote').innerHTML='&ndash;';$('msg').textContent='Sing anything.';return;}
  if(mode==='steps'){if(stepIdx===0||lastTarget==null)lastTarget=lo+Math.floor(Math.random()*Math.max(1,hi-lo-7));target=lastTarget+scale[stepIdx];}
@@ -348,9 +447,12 @@ function tickTrainer(){
   return;}
  const diff=(current.midi-target)*100,tol=mode==='long'?35:25,need=mode==='long'?4000:1500,ok=Math.abs(diff)<tol;
  dot.className='dot live'+(ok?' ok':'');dot.style.left=(50+Math.max(-50,Math.min(50,diff/4)))+'%';
+ devSum+=Math.min(200,Math.abs(diff));devN++;
+ if(ok){onStart=onStart||performance.now();const h=(performance.now()-onStart)/1000;if(h>today().h)today().h=Math.round(h*10)/10;}else onStart=0;
  $('cents').textContent=ok?'On pitch':Math.abs(diff)>=550?(diff>0?'Much too high':'Much too low'):(diff>0?'A little high':'A little low');
  if(ok){holdStart=holdStart||performance.now();const p=(performance.now()-holdStart)/need;$('holdbar').style.width=Math.min(100,p*100)+'%';
-  if(p>=1){score++;$('score').textContent=score+(score===1?' note':' notes')+' matched';$('msg').textContent='Yes.';$('tnote').classList.add('hit');
+  if(p>=1){score++;const pts=Math.max(0,Math.round(100-devSum/Math.max(1,devN)/2));const t=today();t.n++;t.s+=pts;saveLog();
+   $('score').textContent=t.n+' of '+GOAL+' today \u00b7 average '+Math.round(t.s/t.n);$('msg').textContent=(pts>=90?'Excellent':pts>=75?'Good':'Got it')+' \u00b7 '+pts;$('tnote').classList.add('hit');
    holdStart=null;target=null;if(mode==='steps')stepIdx=(stepIdx+1)%scale.length;nextTimer=setTimeout(newTarget,900);}
  }else{holdStart=null;$('holdbar').style.width='0';}
 }
@@ -373,12 +475,13 @@ $('start').onclick=async()=>{
  if(await startMic()){syncButtons();stepIdx=0;newTarget();}
 };
 $('play').onclick=()=>{if(target!=null)playTone(target,$('mode').value==='long'?2:1.4)};
-$('next').onclick=()=>{stepIdx=0;newTarget()};
+$('next').onclick=()=>{if(target!=null){today().sk++;saveLog();}stepIdx=0;newTarget()};
 $('mode').onchange=()=>{stepIdx=0;syncButtons();if(running)newTarget()};
 $('voice').onchange=()=>{stepIdx=0;if(running)newTarget()};
 $('tone').onchange=()=>{store.set('tone',$('tone').value);if(running&&target!=null)playTone(target)};
 $('tone').value=store.get('tone','auto');
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMic();});
+{const t=log[dkey()];if(t&&t.n)$('score').textContent=t.n+' of '+GOAL+' today \u00b7 average '+Math.round(t.s/t.n);}
 
 // ---------- range ----------
 let measuring=false,rcand=null,rcStart=0,range=store.get('range',null);
@@ -416,13 +519,33 @@ const WU=[
  ['Ranchera long notes',60,'Sing "ay" on one comfortable low note and hold it 4 to 6 seconds, soft then strong then soft. Breathe low between each.'],
  ['Cool down',30,'Descending sighs from high to low on "ah". Relax the jaw.']];
 $('wlist').innerHTML=WU.map((w,i)=>`<li id="w${i}"><b>${w[0]}</b> &middot; ${w[1]}s<br>${w[2]}</li>`).join('');
+const FIG='<circle class="s" cx="100" cy="26" r="11"/><path class="s" d="M100 37V86M100 86L86 116M100 86L114 116"/>';
+const ARMS='<path class="s" d="M76 50H124M76 50L70 82M124 50L130 82"/>';
+const AN={
+ body:['Roll your shoulders back in slow circles, then tip your head gently side to side.','<g class="a-tilt"><circle class="s" cx="100" cy="26" r="11"/></g><path class="s" d="M100 37V86M100 86L86 116M100 86L114 116"/><g class="a-roll">'+ARMS+'</g>'],
+ posture:['Grow tall through the top of your head. Shoulders drop, knees stay soft.','<path class="f" d="M100 4V118"/>'+FIG+'<g class="a-drop">'+ARMS+'</g><path class="s a-up" d="M94 9L100 3L106 9" style="stroke:var(--good)"/>'],
+ breath:['The circle is your belly and lower ribs: let them widen as you breathe in, then hiss the air out slowly and evenly.','<circle class="s a-breath" cx="100" cy="56" r="20" style="stroke:var(--good)"/><text class="a-in" x="100" y="114">Breathe in &middot; 4</text><text class="a-out" x="100" y="114">Hiss out &middot; sss</text>'],
+ trill:['Loose lips flutter like a horse, "brrr", while the pitch slides up and down.','<path class="f" d="M10 92C55 92 55 24 100 24S145 92 190 92"/><g class="a-buzz"><circle class="d" r="7"><animateMotion dur="5s" repeatCount="indefinite" path="M10 92C55 92 55 24 100 24S145 92 190 92"/></circle></g><text x="100" y="114">brrr</text>'],
+ straw:['Hum through a straw and slide slowly from low to high and back.','<path class="f" d="M10 92C55 92 55 24 100 24S145 92 190 92"/><circle class="d" r="7"><animateMotion dur="7s" repeatCount="indefinite" path="M10 92C55 92 55 24 100 24S145 92 190 92"/></circle><text x="100" y="114">low &middot; high &middot; low</text>'],
+ siren:['Like a siren on "ng" or "oo": glide all the way up and back down, light and easy.','<path class="f" d="M10 96C40 96 60 14 100 14S160 96 190 96"/><circle class="d" r="7"><animateMotion dur="4s" repeatCount="indefinite" path="M10 96C40 96 60 14 100 14S160 96 190 96"/></circle><text x="100" y="114">ng</text>'],
+ sigh:['A relaxed sigh that falls from high to low on "ah". Let the jaw hang loose.','<path class="f" d="M14 20C80 20 110 96 186 96"/><circle class="d" r="7"><animateMotion dur="3.5s" repeatCount="indefinite" path="M14 20C80 20 110 96 186 96"/></circle><text x="100" y="114">ahhh</text>'],
+ swell:['One note, held steady: start soft, grow strong, return to soft. The power comes from your breath.','<path class="s a-swell" d="M16 56Q100 6 184 56Q100 106 16 56Z" style="stroke:var(--good)"/><text x="100" y="114">soft &middot; strong &middot; soft</text>'],
+};
+const stepsSvg=(lab)=>[0,2,4,5,7,5,4,2,0].map((h,i)=>'<rect class="d a-step" x="'+(14+i*20)+'" y="'+(86-h*9)+'" width="13" height="'+(8+h*9)+'" rx="2" style="animation-delay:'+(i*.5)+'s"/>').join('')+'<text x="100" y="114">'+lab+'</text>';
+AN.hum=['Five notes up and five back down, humming "mm". Feel the buzz in your lips and nose.',stepsSvg('mm')];
+AN.vowels=['Five notes up and back down on one vowel: "ee", then "ah", then "oo". Keep the same tone on every step.',stepsSvg('ee &middot; ah &middot; oo')];
+const WA=['body','posture','breath','trill','straw','hum','siren','vowels','swell','sigh'];
+function showAnim(i){const a=AN[WA[i]]||AN.breath;$('wanim').innerHTML='<svg viewBox="0 0 200 120" role="img" aria-label="'+WU[i][0]+'">'+a[1]+'</svg>';$('wcap').textContent=WU[i][0]+'. '+a[0];
+ WU.forEach((_,j)=>$('w'+j).classList.toggle('now',j===i));}
+$('wlist').onclick=e=>{const li=e.target.closest('li');if(!li||wt)return;showAnim(+li.id.slice(1));scrollTo({top:0,behavior:'smooth'});};
+showAnim(0);
 let wt=null;
 function wstop(txt){clearInterval(wt);wt=null;$('wstart').textContent='Start';$('wstart').classList.remove('rec');$('wnow').innerHTML=txt||'&nbsp;';WU.forEach((_,j)=>$('w'+j).classList.remove('now'));}
 $('wstart').onclick=()=>{if(wt){wstop();return;}
  let i=0,left=WU[0][1];$('wstart').textContent='Stop';$('wstart').classList.add('rec');
- const mark=()=>{WU.forEach((_,j)=>$('w'+j).classList.toggle('now',j===i));$('w'+i).scrollIntoView({block:'center',behavior:'smooth'});};
+ const mark=()=>showAnim(i);
  const show=()=>$('wnow').textContent=WU[i][0]+' · '+left+'s';mark();show();
- wt=setInterval(()=>{left--;if(left<0){i++;if(i>=WU.length){wstop('Done.');return;}left=WU[i][1];mark();}show();},1000);};
+ wt=setInterval(()=>{left--;if(left<0){i++;if(i>=WU.length){today().w=1;today().sec+=WU.reduce((a,w)=>a+w[1],0);saveLog();wstop('Done. Warmup saved to your progress.');return;}left=WU[i][1];mark();}show();},1000);};
 </script>
 </body>
 </html>
