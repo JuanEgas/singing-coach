@@ -102,7 +102,22 @@ details .card>h2{display:none}
 @keyframes swell{0%,100%{transform:scaleY(.12)}50%{transform:scaleY(1)}}
 .a-buzz{animation:buzz .12s linear infinite}
 @keyframes buzz{0%,100%{transform:translateX(-1px)}50%{transform:translateX(1px)}}
-ol.steps li{cursor:pointer}
+ol.steps li{padding:0}
+ol.steps button{display:block;width:100%;text-align:left;padding:14px 0;color:inherit;line-height:1.6}
+.model{max-width:330px;margin:0 auto}
+.model svg{width:100%;height:auto;display:block}
+.m-air1,.m-air2{animation:mair 1s linear infinite;transition:opacity .3s}
+@keyframes mair{to{stroke-dashoffset:-13}}
+.m-fold{transform-box:fill-box;transform-origin:center}
+@keyframes mfold{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
+@keyframes mbuzz{0%,100%{transform:translate(0,0)}50%{transform:translate(-1.5px,1px)}}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:14px 0 0}
+.chips button{background:var(--soft);border-radius:99px;padding:9px 15px;font-size:14px;min-width:44px}
+.chips button.on{background:var(--ink);color:var(--bg)}
+.tips{text-align:left;list-style:none;padding:0;margin:20px 0 0}
+.tips li{padding:11px 0;border-top:1px solid var(--line);margin:0}
+.tips li.p{color:var(--good)}
+.link{font-size:14px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 nav button{font-size:13px}
 </style>
 </head>
@@ -141,6 +156,7 @@ nav button{font-size:13px}
 <option value="up">Note: octave up</option>
 </select>
 </div>
+<p style="margin:16px 0 0"><button class="link" id="pmouth">See mouth shape for this note</button></p>
 <p class="muted small" id="score">&nbsp;</p>
 </section>
 
@@ -160,10 +176,26 @@ nav button{font-size:13px}
 <p class="muted small" id="rtype"></p>
 </section>
 
+<section id="mouth" class="center">
+<div class="label">Mouth, jaw and throat</div>
+<div class="model" id="mmodel"></div>
+<div class="chips" id="mshape">
+<button data-s="a" class="on">A</button><button data-s="e">E</button><button data-s="i">I</button><button data-s="o">O</button><button data-s="u">U</button>
+<button data-s="hum">Hum</button><button data-s="ng">NG</button><button data-s="trill">Lip trill</button>
+</div>
+<div class="chips" id="mpitch">
+<button data-p="low">Low note</button><button data-p="mid" class="on">Middle</button><button data-p="high">High note</button>
+</div>
+<p style="margin:14px 0 0"><button class="link" id="mreplay">Replay from rest</button></p>
+<ul class="tips" id="mtips"></ul>
+<p class="muted small" style="margin-top:18px">A side view cut through the middle of the head. The round inset shows your lips from the front. Dots show where the air and sound travel.</p>
+</section>
+
 <section id="warmup">
 <div class="center">
 <h1>Warmup</h1>
 <p class="muted">Ten minutes. Everything should feel easy. Tap any step to see how it's done.</p>
+<div class="model" id="wmodel" style="max-width:250px"></div>
 <div class="anim" id="wanim"></div>
 <div class="cap" id="wcap"></div>
 <div class="controls"><button class="main" id="wstart">Start</button></div>
@@ -192,7 +224,7 @@ nav button{font-size:13px}
 <div><span class="muted">Total notes matched</span><span id="ptotal"></span></div>
 <div><span class="muted">Total practice time</span><span id="ptime"></span></div>
 <div><span class="muted">Days practiced</span><span id="pdays"></span></div>
-<div><span class="muted">Range</span><span id="prange"></span></div>
+<div><span class="muted">Range</span><span><span id="prange"></span> &nbsp;<button class="link" id="prbtn">Measure</button></span></div>
 </div>
 <p class="muted small" style="margin-top:22px">Accuracy is how close you stay to each note while you sing it, from 0 to 100. Your progress is saved on this phone, in this browser.</p>
 </section>
@@ -294,7 +326,7 @@ nav button{font-size:13px}
 
 <nav id="tabs">
 <button data-t="practice" class="on">Practice</button>
-<button data-t="range">Range</button>
+<button data-t="mouth">Mouth</button>
 <button data-t="warmup">Warmup</button>
 <button data-t="progress">Progress</button>
 <button data-t="guide">Guide</button>
@@ -308,12 +340,15 @@ const midiToFreq=m=>440*Math.pow(2,(m-69)/12);
 const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
-$('tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;
+function go(t){
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
- document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===t));
+ document.querySelectorAll('section').forEach(sec=>sec.classList.toggle('on',sec.id===t));
  if(t!=='range'&&measuring){measuring=false;syncButtons();}
  if(t==='progress')renderProgress();
- scrollTo(0,0);};
+ if(t==='mouth')mouthShow(true);
+ scrollTo(0,0);
+}
+$('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t));
 
 // ---------- progress log ----------
 const GOAL=10;
@@ -518,26 +553,176 @@ const WU=[
  ['Vowel scales',90,'Sing do-re-mi-fa-sol-fa-mi-re-do on "ee", then "ah", then "oo". Use the Scales exercise in Practice for this.'],
  ['Ranchera long notes',60,'Sing "ay" on one comfortable low note and hold it 4 to 6 seconds, soft then strong then soft. Breathe low between each.'],
  ['Cool down',30,'Descending sighs from high to low on "ah". Relax the jaw.']];
-$('wlist').innerHTML=WU.map((w,i)=>`<li id="w${i}"><b>${w[0]}</b> &middot; ${w[1]}s<br>${w[2]}</li>`).join('');
-const FIG='<circle class="s" cx="100" cy="26" r="11"/><path class="s" d="M100 37V86M100 86L86 116M100 86L114 116"/>';
-const ARMS='<path class="s" d="M76 50H124M76 50L70 82M124 50L130 82"/>';
-const AN={
- body:['Roll your shoulders back in slow circles, then tip your head gently side to side.','<g class="a-tilt"><circle class="s" cx="100" cy="26" r="11"/></g><path class="s" d="M100 37V86M100 86L86 116M100 86L114 116"/><g class="a-roll">'+ARMS+'</g>'],
- posture:['Grow tall through the top of your head. Shoulders drop, knees stay soft.','<path class="f" d="M100 4V118"/>'+FIG+'<g class="a-drop">'+ARMS+'</g><path class="s a-up" d="M94 9L100 3L106 9" style="stroke:var(--good)"/>'],
- breath:['The circle is your belly and lower ribs: let them widen as you breathe in, then hiss the air out slowly and evenly.','<circle class="s a-breath" cx="100" cy="56" r="20" style="stroke:var(--good)"/><text class="a-in" x="100" y="114">Breathe in &middot; 4</text><text class="a-out" x="100" y="114">Hiss out &middot; sss</text>'],
- trill:['Loose lips flutter like a horse, "brrr", while the pitch slides up and down.','<path class="f" d="M10 92C55 92 55 24 100 24S145 92 190 92"/><g class="a-buzz"><circle class="d" r="7"><animateMotion dur="5s" repeatCount="indefinite" path="M10 92C55 92 55 24 100 24S145 92 190 92"/></circle></g><text x="100" y="114">brrr</text>'],
- straw:['Hum through a straw and slide slowly from low to high and back.','<path class="f" d="M10 92C55 92 55 24 100 24S145 92 190 92"/><circle class="d" r="7"><animateMotion dur="7s" repeatCount="indefinite" path="M10 92C55 92 55 24 100 24S145 92 190 92"/></circle><text x="100" y="114">low &middot; high &middot; low</text>'],
- siren:['Like a siren on "ng" or "oo": glide all the way up and back down, light and easy.','<path class="f" d="M10 96C40 96 60 14 100 14S160 96 190 96"/><circle class="d" r="7"><animateMotion dur="4s" repeatCount="indefinite" path="M10 96C40 96 60 14 100 14S160 96 190 96"/></circle><text x="100" y="114">ng</text>'],
- sigh:['A relaxed sigh that falls from high to low on "ah". Let the jaw hang loose.','<path class="f" d="M14 20C80 20 110 96 186 96"/><circle class="d" r="7"><animateMotion dur="3.5s" repeatCount="indefinite" path="M14 20C80 20 110 96 186 96"/></circle><text x="100" y="114">ahhh</text>'],
- swell:['One note, held steady: start soft, grow strong, return to soft. The power comes from your breath.','<path class="s a-swell" d="M16 56Q100 6 184 56Q100 106 16 56Z" style="stroke:var(--good)"/><text x="100" y="114">soft &middot; strong &middot; soft</text>'],
+$('wlist').innerHTML=WU.map((w,i)=>`<li id="w${i}"><button data-i="${i}"><b>${w[0]}</b> &middot; ${w[1]}s<br>${w[2]}</button></li>`).join('');
+// ---------- vocal tract model ----------
+const PIV=[205,150],JAWDEG=13;
+const SH={
+ rest:{jaw:0,lipF:0,lipUp:0,d:[128,160],b:[170,190],tip:[78,176],vel:0,fw:48,fh:0,air:0},
+ a:{jaw:1,lipF:0,lipUp:0,d:[134,178],b:[175,198],tip:[75,181],vel:1,fw:46,fh:40,air:1},
+ e:{jaw:.58,lipF:0,lipUp:0,d:[116,159],b:[168,194],tip:[75,181],vel:1,fw:54,fh:24,air:1},
+ i:{jaw:.3,lipF:0,lipUp:0,d:[108,152],b:[164,194],tip:[75,181],vel:1,fw:56,fh:13,air:1},
+ o:{jaw:.62,lipF:5,lipUp:3,d:[150,167],b:[177,193],tip:[79,183],vel:1,fw:30,fh:32,air:1},
+ u:{jaw:.34,lipF:8,lipUp:3,d:[155,157],b:[178,187],tip:[83,183],vel:1,fw:16,fh:15,air:1},
+ hum:{jaw:.12,lipF:0,lipUp:4,d:[128,162],b:[170,190],tip:[78,178],vel:0,fw:48,fh:0,air:2},
+ ng:{jaw:.45,lipF:0,lipUp:0,d:[163,156],b:[180,180],tip:[79,183],vel:0,fw:46,fh:22,air:2},
+ trill:{jaw:.15,lipF:6,lipUp:5,d:[128,164],b:[170,190],tip:[78,180],vel:1,fw:32,fh:0,air:1},
+ straw:{jaw:.26,lipF:9,lipUp:5,d:[140,164],b:[176,190],tip:[80,182],vel:1,fw:9,fh:9,air:1}
 };
-const stepsSvg=(lab)=>[0,2,4,5,7,5,4,2,0].map((h,i)=>'<rect class="d a-step" x="'+(14+i*20)+'" y="'+(86-h*9)+'" width="13" height="'+(8+h*9)+'" rx="2" style="animation-delay:'+(i*.5)+'s"/>').join('')+'<text x="100" y="114">'+lab+'</text>';
-AN.hum=['Five notes up and five back down, humming "mm". Feel the buzz in your lips and nose.',stepsSvg('mm')];
-AN.vowels=['Five notes up and back down on one vowel: "ee", then "ah", then "oo". Keep the same tone on every step.',stepsSvg('ee &middot; ah &middot; oo')];
-const WA=['body','posture','breath','trill','straw','hum','siren','vowels','swell','sigh'];
-function showAnim(i){const a=AN[WA[i]]||AN.breath;$('wanim').innerHTML='<svg viewBox="0 0 200 120" role="img" aria-label="'+WU[i][0]+'">'+a[1]+'</svg>';$('wcap').textContent=WU[i][0]+'. '+a[0];
- WU.forEach((_,j)=>$('w'+j).classList.toggle('now',j===i));}
-$('wlist').onclick=e=>{const li=e.target.closest('li');if(!li||wt)return;showAnim(+li.id.slice(1));scrollTo({top:0,behavior:'smooth'});};
+const SHTIPS={
+ a:['Drop the jaw straight down, about two fingers wide.','Tongue lies flat, tip resting on the back of your lower teeth.','Soft palate lifts, like the start of a yawn.'],
+ e:['Jaw about half open.','The tongue arches forward; the tip stays on the lower teeth.','Lip corners relaxed, not a wide smile.'],
+ i:['Small jaw opening. The tongue does the work, high and forward.','Tip stays behind the lower teeth.','Keep space between your back teeth; don’t spread the lips wide.'],
+ o:['Lips rounded, with the jaw open behind them.','The tongue pulls back and sits mid-high.','Soft palate stays lifted.'],
+ u:['Lips rounded and forward, with a small opening.','Back of the tongue is high; the jaw stays loose.','Keep the teeth apart behind the lips.'],
+ hum:['Lips closed lightly, teeth apart.','Soft palate lowers, so the sound leaves through the nose.','You should feel a buzz on the lips and nose.'],
+ ng:['The back of the tongue lifts to meet the soft palate, as in “sing”.','Mouth stays open; the sound goes through the nose.','Jaw relaxed.'],
+ trill:['Lips closed and loose, pushed slightly forward.','A steady stream of air makes them flutter.','Jaw relaxed, teeth apart.'],
+ straw:['Lips sealed around the straw.','Cheeks relaxed, tongue low.','Air flows steadily; the sound stays gentle.'],
+ rest:['Lips closed, teeth slightly apart.','Tongue resting, soft palate lowered.','Breathe in quietly through the nose.']
+};
+const PITCHTIPS={
+ low:'Low note: let the voice box settle low and keep the throat wide. Don’t press your chin down to reach it.',
+ mid:'Middle note: voice box neutral, jaw loose, steady breath.',
+ high:'High note: open the jaw more and lift the soft palate higher. Think of a yawn so the voice box doesn’t rise; don’t lift your chin.'
+};
+function shapeFor(name,pitch){
+ const s=JSON.parse(JSON.stringify(SH[name]||SH.rest));s.ly=0;s.phon=name==='rest'?0:1;s.buzz=name==='trill'?1:0;
+ const vowel='aeiou'.includes(name)&&name.length===1;
+ if(pitch==='low'){s.ly=7;if(vowel)s.jaw*=.9;}
+ if(pitch==='high'){s.ly=-1;if(vowel){s.jaw=Math.min(1.25,s.jaw*1.15+.14);s.fh=Math.min(46,s.fh*1.15+6);}if(s.vel>0)s.vel=1.25;}
+ return s;
+}
+let MODELN=0;
+function makeModel(el){
+ const n=++MODELN,L=(a,b,t)=>a+(b-a)*t;
+ el.innerHTML=`<svg viewBox="26 0 258 336" role="img" aria-label="Cutaway of the head showing jaw, tongue, lips, soft palate and voice box">
+<defs>
+<linearGradient id="sk${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6d3b6"/><stop offset=".6" stop-color="#e6b592"/><stop offset="1" stop-color="#c98f6b"/></linearGradient>
+<linearGradient id="sj${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#efc5a5"/><stop offset="1" stop-color="#cf9772"/></linearGradient>
+<radialGradient id="cv${n}" cx=".45" cy=".3" r=".8"><stop offset="0" stop-color="#7a2a31"/><stop offset="1" stop-color="#3a1014"/></radialGradient>
+<radialGradient id="tg${n}" cx=".4" cy=".2" r=".9"><stop offset="0" stop-color="#ffa3a8"/><stop offset=".55" stop-color="#e86f78"/><stop offset="1" stop-color="#b9434e"/></radialGradient>
+<linearGradient id="lp${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e58a86"/><stop offset="1" stop-color="#b9555a"/></linearGradient>
+<linearGradient id="th${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ddd6cc"/></linearGradient>
+<filter id="sh${n}" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".22"/></filter>
+<filter id="in${n}"><feGaussianBlur stdDeviation="1.2"/></filter>
+<clipPath id="fc${n}"><ellipse class="m-fin" cx="68" cy="292" rx="20" ry="10"/></clipPath>
+</defs>
+<g filter="url(#sh${n})">
+<path fill="url(#cv${n})" d="M64 152L100 138L150 136L200 128V330H172V226L120 236L64 206Z"/>
+<path class="m-air1" fill="none" stroke="#bfe3ff" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 12" d="M184 318V220C184 180 160 172 130 172L44 172"/>
+<path class="m-air2" fill="none" stroke="#bfe3ff" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 12" d="M184 318V170C184 132 160 124 130 126L44 134"/>
+<path fill="url(#sk${n})" d="M57 162C49 159 48 150 56 146L60 138C50 137 36 131 36 122C39 112 56 100 62 88C59 70 62 52 76 38C102 6 192 2 238 40C274 70 277 140 257 180C247 200 239 210 239 230L239 330L196 330L196 152C196 128 176 120 161 136L152 146C140 135 110 133 92 140C80 144 73 148 69 154L67 161Z"/>
+<path fill="#4a171c" opacity=".5" filter="url(#in${n})" d="M64 131C90 118 140 114 172 124C178 128 172 135 160 133C130 126 95 129 70 138Z"/>
+<path d="M68 96q8 5 16 0" fill="none" stroke="#8a5a40" stroke-width="2" stroke-linecap="round"/>
+<path fill="url(#sj${n})" d="M118 330L122 262C126 246 140 238 172 224L172 330Z"/>
+<g class="m-lar">
+<rect x="150" y="246" width="19" height="32" rx="6" fill="#f7e6d2" opacity=".55"/>
+<path d="M172 234C173 222 179 213 185 207" fill="none" stroke="#f0a3a0" stroke-width="5" stroke-linecap="round"/>
+<g class="m-fold"><path d="M172 261H183L186 265L183 269H172Z" fill="#ffd9d2"/><path d="M196 261H190L187 265L190 269H196Z" fill="#ffd9d2"/></g>
+<path d="M165 286v6M165 298v6M165 310v6M165 322v6" stroke="#f7e6d2" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+</g>
+<path class="m-vel" fill="none" stroke="#e8858a" stroke-width="10" stroke-linecap="round" d="M150 145Q165 150 172 176"/>
+<path class="m-tongue" fill="url(#tg${n})" d=""/>
+<path fill="url(#th${n})" stroke="#c9bfb0" stroke-width=".6" d="M63 151H69.5L69 168Q66 170.5 64 168Z"/>
+<g class="m-jaw">
+<path fill="url(#th${n})" stroke="#c9bfb0" stroke-width=".6" d="M67 166Q70 164 72 166L73.5 186H67.5Z"/>
+<path fill="url(#sj${n})" d="M70 172C66 178 64 184 60 190C56 196 53 202 58 211C62 222 74 228 90 230L156 239L160 226L150 214C120 211 92 205 78 195Z"/>
+<text x="96" y="226" font-size="8.5" fill="#5b3b2a" style="letter-spacing:.06em;text-transform:uppercase">jaw</text><g class="m-lowlip"><path fill="url(#lp${n})" d="M62 163C52 162 46 168 48 176C50 184 58 188 67 185L72 174L68 164Z"/></g>
+</g>
+<g class="m-uplip"><path fill="url(#lp${n})" d="M62 162C52 164 45 156 49 149C52 144 59 144 64 147L68 152L67 161Z"/></g>
+</g>
+<g class="m-labels" font-size="8.5" fill="#5b3b2a" style="font-family:inherit;letter-spacing:.06em;text-transform:uppercase">
+<text x="203" y="141">soft palate</text><text x="203" y="268">voice box</text><text x="203" y="200">throat</text><text x="92" y="126">nose</text>
+</g>
+<circle cx="68" cy="292" r="38" fill="url(#sk${n})" filter="url(#sh${n})"/>
+<ellipse class="m-fout" cx="68" cy="292" rx="28" ry="16" fill="url(#lp${n})"/>
+<ellipse class="m-fin2" cx="68" cy="292" rx="20" ry="10" fill="#3a1014"/>
+<g clip-path="url(#fc${n})"><rect class="m-fteeth" x="42" y="270" width="52" height="9" rx="3" fill="url(#th${n})"/><ellipse class="m-ftongue" cx="68" cy="318" rx="20" ry="14" fill="url(#tg${n})"/></g>
+<path class="m-fline" d="M44 292Q68 296 92 292" fill="none" stroke="#7d3237" stroke-width="2" stroke-linecap="round"/>
+</svg>`;
+ const q=c=>el.querySelector(c);
+ const jaw=q('.m-jaw'),tongue=q('.m-tongue'),vel=q('.m-vel'),lar=q('.m-lar'),low=q('.m-lowlip'),up=q('.m-uplip'),fold=q('.m-fold'),a1=q('.m-air1'),a2=q('.m-air2');
+ const fout=q('.m-fout'),fin=q('.m-fin'),fin2=q('.m-fin2'),fteeth=q('.m-fteeth'),ftongue=q('.m-ftongue'),fline=q('.m-fline');
+ let cur=shapeFor('rest','mid'),raf=0;
+ function rot(p,w,deg){const t=-deg*w*Math.PI/180,x=p[0]-PIV[0],y=p[1]-PIV[1];return[PIV[0]+x*Math.cos(t)-y*Math.sin(t),PIV[1]+x*Math.sin(t)+y*Math.cos(t)];}
+ function spline(P){const n=P.length,f=v=>v.toFixed(1);let s='M'+f(P[0][0])+' '+f(P[0][1]);
+  for(let i=0;i<n;i++){const p0=P[(i-1+n)%n],p1=P[i],p2=P[(i+1)%n],p3=P[(i+2)%n];
+   s+='C'+f(p1[0]+(p2[0]-p0[0])/6)+' '+f(p1[1]+(p2[1]-p0[1])/6)+' '+f(p2[0]-(p3[0]-p1[0])/6)+' '+f(p2[1]-(p3[1]-p1[1])/6)+' '+f(p2[0])+' '+f(p2[1]);}
+  return s+'Z';}
+ function draw(s){
+  const deg=JAWDEG*s.jaw;
+  jaw.setAttribute('transform','rotate('+(-deg).toFixed(2)+' '+PIV[0]+' '+PIV[1]+')');
+  low.setAttribute('transform','translate('+(-s.lipF).toFixed(1)+' '+(-s.lipUp).toFixed(1)+')');
+  up.setAttribute('transform','translate('+(-s.lipF*.8).toFixed(1)+' 0)');
+  const d=s.d,b=s.b,t=s.tip,bl=[(d[0]+t[0])/2-4,(d[1]+t[1])/2-7];
+  const P=[rot([172,228],.15,deg),rot([b[0]-3,(b[1]+228)/2+2],.3,deg),rot(b,.4,deg),rot(d,.7,deg),rot(bl,.9,deg),rot(t,1,deg),rot([t[0]+8,t[1]+13],1,deg),rot([112,208],.9,deg),rot([150,220],.6,deg)];
+  tongue.setAttribute('d',spline(P));
+  const v=s.vel,tx=L(171,188,Math.min(v,1))+(v>1?1:0),ty=L(176,143,Math.min(v,1))-(v>1?(v-1)*24:0),cx=L(163,172,Math.min(v,1)),cy=L(152,136,Math.min(v,1))-(v>1?(v-1)*16:0);
+  vel.setAttribute('d','M150 145Q'+cx.toFixed(1)+' '+cy.toFixed(1)+' '+tx.toFixed(1)+' '+ty.toFixed(1));
+  lar.setAttribute('transform','translate(0 '+s.ly.toFixed(1)+')');
+  fold.style.animation=s.phon>.5?'mfold .09s linear infinite':'none';
+  low.style.animation=s.buzz>.5?'mbuzz .07s linear infinite':'none';
+  a1.style.opacity=s.air>.5&&s.air<1.5?.9:0;a2.style.opacity=s.air>1.5?.9:0;
+  const rx=s.fw/2,ry=s.fh/2,open=ry>1.5;
+  fout.setAttribute('rx',rx+8);fout.setAttribute('ry',Math.max(ry+8,9));
+  [fin,fin2].forEach(e=>{e.setAttribute('rx',Math.max(rx,.1));e.setAttribute('ry',Math.max(ry,.1));});
+  fteeth.setAttribute('y',292-ry-5);ftongue.setAttribute('cy',292+ry+ (s.fh>30?4:7));
+  fline.style.opacity=open?0:1;fin2.style.opacity=open?1:0;
+ }
+ function mix(a,b,t){const o={};for(const k in b){o[k]=Array.isArray(b[k])?[L(a[k][0],b[k][0],t),L(a[k][1],b[k][1],t)]:L(a[k],b[k],t);}return o;}
+ function to(target,ms=650){cancelAnimationFrame(raf);const from=cur,t0=performance.now();
+  const step=now=>{let t=Math.min(1,(now-t0)/ms);t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;cur=mix(from,target,t);cur.air=target.air;draw(cur);if(t<1)raf=requestAnimationFrame(step);};
+  raf=requestAnimationFrame(step);}
+ draw(cur);
+ return{show:(name,pitch,ms)=>to(shapeFor(name,pitch||'mid'),ms),snap:(name,pitch)=>{cancelAnimationFrame(raf);cur=shapeFor(name,pitch||'mid');draw(cur);}};
+}
+
+// ---------- mouth tab ----------
+let mModel=null,mS='a',mP='mid';
+function mouthShow(replay){
+ if(!mModel)mModel=makeModel($('mmodel'));
+ document.querySelectorAll('#mshape button').forEach(b=>b.classList.toggle('on',b.dataset.s===mS));
+ document.querySelectorAll('#mpitch button').forEach(b=>b.classList.toggle('on',b.dataset.p===mP));
+ if(replay){mModel.snap('rest','mid');setTimeout(()=>mModel.show(mS,mP,900),350);}else mModel.show(mS,mP);
+ $('mtips').innerHTML=SHTIPS[mS].map(t=>'<li>'+t+'</li>').join('')+'<li class="p">'+PITCHTIPS[mP]+'</li>';
+}
+document.querySelectorAll('#mshape button').forEach(b=>b.onclick=()=>{mS=b.dataset.s;mouthShow(false);});
+document.querySelectorAll('#mpitch button').forEach(b=>b.onclick=()=>{mP=b.dataset.p;mouthShow(false);});
+$('mreplay').onclick=()=>mouthShow(true);
+$('pmouth').onclick=()=>{
+ if(target!=null){const [lo,hi]=curRange(),f=(target-lo)/Math.max(1,hi-lo);mP=f<.34?'low':f>.66?'high':'mid';}
+ if(!'aeiou'.includes(mS)||mS.length>1)mS='a';
+ go('mouth');
+};
+$('prbtn').onclick=()=>go('range');
+
+// ---------- warmup visuals ----------
+const BREATH='<svg viewBox="0 0 200 120" role="img" aria-label="Breathing pacer"><circle class="s a-breath" cx="100" cy="56" r="20" style="stroke:var(--good)"/><text class="a-in" x="100" y="114">Breathe in &middot; 4</text><text class="a-out" x="100" y="114">Hiss out &middot; sss</text></svg>';
+// each step: [caption, sequence of mouth shapes or null, pitch]
+const WV=[
+ ['Roll your shoulders back in slow circles, then tip your head gently side to side. Keep the jaw hanging loose.',null],
+ ['Grow tall through the top of your head. Shoulders drop, knees stay soft, chin level.',null],
+ ['Let your belly and lower ribs widen as you breathe in, then hiss the air out slowly and evenly.','breath'],
+ ['Lips closed and loose. Steady air makes them flutter, "brrr", while the pitch slides up and down.',['trill']],
+ ['Lips sealed around the straw, tongue low. Slide slowly from low to high and back.',['straw']],
+ ['Lips closed, teeth apart. The soft palate drops and the sound leaves through your nose.',['hum']],
+ ['The back of your tongue meets the soft palate, as in "sing". Glide up and down like a siren.',['ng']],
+ ['Same scale on "ee", then "ah", then "oo". Watch how only the tongue, jaw and lips change.',['i','a','u']],
+ ['"Ay" is "ah" gliding to "ee". Stay on the open "ah" for almost the whole note and close to "ee" at the very end.',['a','a','a','i']],
+ ['A relaxed sigh on "ah", falling from high to low. Let the jaw hang.',['a','rest']]
+];
+let wModel=null,wCyc=null;
+function showAnim(i){
+ clearInterval(wCyc);wCyc=null;const v=WV[i]||WV[0];
+ WU.forEach((_,j)=>$('w'+j).classList.toggle('now',j===i));
+ $('wcap').textContent=WU[i][0]+'. '+v[0];
+ const seq=Array.isArray(v[1])?v[1]:null;
+ $('wmodel').style.display=seq?'':'none';$('wanim').style.display=v[1]==='breath'?'':'none';
+ if(v[1]==='breath')$('wanim').innerHTML=BREATH;
+ if(seq){if(!wModel)wModel=makeModel($('wmodel'));let k=0;wModel.show(seq[0],'mid');
+  if(seq.length>1)wCyc=setInterval(()=>{k=(k+1)%seq.length;wModel.show(seq[k],'mid',800);},1800);}
+}
+$('wlist').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(wt)return;showAnim(+b.dataset.i);scrollTo({top:0,behavior:'smooth'});});
 showAnim(0);
 let wt=null;
 function wstop(txt){clearInterval(wt);wt=null;$('wstart').textContent='Start';$('wstart').classList.remove('rec');$('wnow').innerHTML=txt||'&nbsp;';WU.forEach((_,j)=>$('w'+j).classList.remove('now'));}
